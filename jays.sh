@@ -226,13 +226,18 @@ action_commit() {
     # Sync git branch
     jj bookmark move --from 'heads(::@- & bookmarks())' --to @-
     echo
-    git switch "$branch"
-    echo
+    # Only switch git branch if we have one (may be detached HEAD)
+    if [ -n "$branch" ]; then
+      git switch "$branch"
+      echo
+    fi
     jj log --limit 3
-    log_success "Created a new commit on $branch"
+    log_success "Created a new commit on ${branch:-current revision}"
     
-    # Prompt to push
-    try_push_bookmark "$branch"
+    # Prompt to push (only if we have a branch name)
+    if [ -n "$branch" ]; then
+      try_push_bookmark "$branch"
+    fi
   else
     # Standalone behavior - mimics original "commit to specific bookmark" flow
     target_bookmark=$(jj bookmark list | sed 's/:.*//' | gum choose --header="Choose a branch to commit to")
