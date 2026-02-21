@@ -327,6 +327,28 @@ action_new_revision() {
   fi
 }
 
+action_undo() {
+  if confirm_action "Undo the last operation?"; then
+    jj undo
+    echo
+    if $IS_COLOCATED; then
+      local branch
+      branch=$(git branch --show-current)
+      if [ -z "$branch" ]; then
+        # Restore git to the main tracked branch after undo
+        local main_branch
+        main_branch=$(jj bookmark list | sed 's/:.*//' | head -1)
+        if [ -n "$main_branch" ]; then
+          git switch "$main_branch"
+          echo
+        fi
+      fi
+    fi
+    jj log --limit 3
+    log_success "Undid last operation"
+  fi
+}
+
 action_bookmarks() {
   while true; do
     local action
@@ -555,6 +577,7 @@ main() {
       "squash - Merge current work into parent"
       "abandon - Discard current changes"
       "new - Create new empty revision"
+      "undo - Undo the last operation"
       "bookmark - Manage bookmarks/branches"
       "remote - Manage remotes (push/pull)"
       "exit - Exit"
@@ -568,6 +591,7 @@ main() {
       squash)   action_squash ;;
       abandon)  action_abandon ;;
       new)      action_new_revision ;;
+      undo)     action_undo ;;
       bookmark) action_bookmarks ;;
       remote)   action_remotes ;;
       exit)     break ;;
